@@ -1,4 +1,3 @@
-#Black Jack Simulator
 import random
 
 def create_deck():
@@ -15,11 +14,29 @@ def card_value(card, current_score=0):
         return int(card[0])
 
 def play_blackjack():
-    while True:
+    #Chip System
+    starting_chips = 100
+    player_chips = starting_chips
+
+    while player_chips > 0:
+        print(f'You have {player_chips} chips.')
+
+        #Betting System
+        while True:
+            try:
+                bet = int(input('How much would you like to bet this round (Choose Wisely):'))
+                if bet > player_chips:
+                    print('You dont have enough chips!')
+                elif bet <= 0:
+                    print('You have to bet something greater than 0.')
+                else:
+                    break
+            except ValueError:
+                print('Please enter a valid number.')
+
+        # Initialization
         deck = create_deck()
         random.shuffle(deck)
-
-        #Initialization
         player_card = [deck.pop(), deck.pop()]
         dealer_card = [deck.pop(), deck.pop()]
 
@@ -32,6 +49,7 @@ def play_blackjack():
 
             if player_score > 21:
                 print('Player broke 21, Dealer wins.')
+                player_chips -= bet
                 player_busted = True
                 break
 
@@ -52,6 +70,7 @@ def play_blackjack():
                     print(f'\nDealer Cards: {dealer_card}')
                     print(f'Dealer Score: {dealer_score}')
                     print('Player Wins, Dealer broke 21!')
+                    player_chips += bet
                     break
 
                 if dealer_score < 17:
@@ -65,19 +84,26 @@ def play_blackjack():
                 print('\n')
                 if player_score > dealer_score:
                     print('Player Wins! Player was closer to 21.')
+                    player_chips += bet
                 elif dealer_score > player_score:
                     print('Dealer Wins! Dealer was closer to 21.')
+                    player_chips -= bet
                 else:
                     print('It\'s a Draw!')
+
+        #Out of Chips
+        if player_chips <= 0:
+            print("You're out of chips, better luck next time!")
+            break
+
+        #Update Chip Count
+        print(f'\nYou now have {player_chips} chips.')
 
         #Play Again
         play_again = input('Do you want to play again? (Yes or No): ').strip().lower()
         if play_again != 'yes':
-            print('See you next time')
+            print(f'You ended with {player_chips} chips, See you next time.')
             break
 
 #Starts Game
 play_blackjack()
-
-
-
