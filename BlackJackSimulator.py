@@ -1,10 +1,14 @@
 #Black Jack Simulator
 import random
+import tkinter as tk
+from tkinter import messagebox
+
 
 def create_deck():
     card_suit = ['Hearts', 'Diamonds', 'Clubs', 'Spades']
     cards_list = ['Ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King']
     return [(card, suit) for suit in card_suit for card in cards_list]
+
 
 def card_value(card, current_score=0):
     if card[0] in ['Jack', 'Queen', 'King']:
@@ -14,97 +18,241 @@ def card_value(card, current_score=0):
     else:
         return int(card[0])
 
-def play_blackjack():
-    #Chip System
-    starting_chips = 100
-    player_chips = starting_chips
 
-    while player_chips > 0:
-        print(f'You have {player_chips} chips.')
+class BlackjackApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Blackjack Simulator")
 
-        #Betting System
-        while True:
-            try:
-                bet = int(input('How much would you like to bet this round (Choose Wisely):'))
-                if bet > player_chips:
-                    print('You dont have enough chips!')
-                elif bet <= 0:
-                    print('You have to bet something greater than 0.')
-                else:
-                    break
-            except ValueError:
-                print('Please enter a valid number.')
+        # Game variables
+        self.deck = create_deck()
+        random.shuffle(self.deck)
+        self.player_hand = []
+        self.dealer_hand = []
+        self.player_chips = 100
+        self.bet = 0
 
-        # Initialization
-        deck = create_deck()
-        random.shuffle(deck)
-        player_card = [deck.pop(), deck.pop()]
-        dealer_card = [deck.pop(), deck.pop()]
+        # GUI Components
+        self.create_widgets()
 
-        #Player Section
-        player_busted = False
-        while True:
-            player_score = sum(card_value(card, sum(card_value(c) for c in player_card)) for card in player_card)
-            print(f'\nPlayer Cards: {player_card}')
-            print(f'Player Score: {player_score}')
+        # Start game
+        self.new_round()
 
-            if player_score > 21:
-                print('Player broke 21, Dealer wins.')
-                player_chips -= bet
-                player_busted = True
-                break
+    def create_widgets(self):
+        # Chip Count
+        self.chip_label = tk.Label(self.root, text=f"Chips: {self.player_chips}", font=("Arial", 16))
+        self.chip_label.pack()
 
-            choice = input("What's your next move? (Hit or Stand): ").strip().lower()
-            if choice == 'hit':
-                player_card.append(deck.pop())
-            elif choice == 'stand':
-                break
+        # Bet Entry
+        tk.Label(self.root, text="Bet Amount:", font=("Arial", 14)).pack()
+        self.bet_entry = tk.Entry(self.root, font=("Arial", 14))
+        self.bet_entry.pack()
+
+        # Buttons for actions
+        self.deal_button = tk.Button(self.root, text="Deal", command=self.place_bet, font=("Arial", 14), bg="green")
+        self.deal_button.pack(pady=10)
+
+        self.hit_button = tk.Button(self.root, text="Hit", command=self.hit, font=("Arial", 14), state="disabled")
+        self.hit_button.pack(side=tk.LEFT, padx=10)
+
+        self.stand_button = tk.Button(self.root, text="Stand", command=self.stand, font=("Arial", 14), state="disabled")
+        self.stand_button.pack(side=tk.LEFT, padx=10)
+
+        # Player and Dealer Hands
+        self.player_label = tk.Label(self.root, text="Player: ", font=("Arial", 14))
+        self.player_label.pack()
+        self.dealer_label = tk.Label(self.root, text="Dealer: ", font=("Arial", 14))
+        self.dealer_label.pack()
+
+        # Result
+        self.result_label = tk.Label(self.root, text="", font=("Arial", 16))
+        self.result_label.pack(pady=10)
+
+    def new_round(self):
+        """Initialize a new round."""
+        self.deck = create_deck()
+        random.shuffle(self.deck)
+        self.player_hand = [self.deck.pop(), self.deck.pop()]
+        self.dealer_hand = [self.deck.pop(), self.deck.pop()]
+        self.update_display()
+
+    def place_bet(self):
+        """Place a bet and start the game."""
+        try:
+            self.bet = int(self.bet_entry.get())
+            if self.bet > self.player_chips:
+                messagebox.showerror("Error", "You don't have enough chips!")
+            elif self.bet <= 0:
+                messagebox.showerror("Error", "Bet must be greater than 0.")
             else:
-                print('Invalid Move, Try Again')
+                self.start_game()
+        except ValueError:
+            messagebox.showerror("Error", "Please enter a valid number.")
 
-        #Dealer Section
-        if not player_busted:
-            while True:
-                dealer_score = sum(card_value(card, sum(card_value(c) for c in dealer_card)) for card in dealer_card)
+    def start_game(self):
+        """Enable buttons and start the round."""
+        self.result_label.config(text="")
+        self.bet_entry.config(state="disabled")
+        self.deal_button.config(state="disabled")
+        self.hit_button.config(state="normal")
+        self.stand_button.config(state="normal")
 
-                if dealer_score > 21:
-                    print(f'\nDealer Cards: {dealer_card}')
-                    print(f'Dealer Score: {dealer_score}')
-                    print('Player Wins, Dealer broke 21!')
-                    player_chips += bet
-                    break
+    def hit(self):
+        """Player chooses to draw a card."""
+        self.player_hand.append(self.deck.pop())
+        self.update_display()
 
-                if dealer_score < 17:
-                    dealer_card.append(deck.pop())
-                else:
-                    break
+        player_score = self.calculate_score(self.player_hand)
+        if player_score > 21:
+            self.end_round("Bust! Dealer Wins.")
 
-            if dealer_score <= 21:
-                print(f'\nDealer Cards: {dealer_card}')
-                print(f'Dealer Score: {dealer_score}')
-                print('\n')
-                if player_score > dealer_score:
-                    print('Player Wins! Player was closer to 21.')
-                    player_chips += bet
-                elif dealer_score > player_score:
-                    print('Dealer Wins! Dealer was closer to 21.')
-                    player_chips -= bet
-                else:
-                    print('It\'s a Draw!')
+    def stand(self):
+        """Player stands, dealer's turn."""
+        while self.calculate_score(self.dealer_hand) < 17:
+            self.dealer_hand.append(self.deck.pop())
 
-        #Out of Chips
-        if player_chips <= 0:
-            print("You're out of chips, better luck next time!")
-            break
+        self.check_winner()
 
-        #Update Chip Count
-        print(f'\nYou now have {player_chips} chips.')
+    def calculate_score(self, hand):
+        """Calculate the total score of a hand."""
+        score = 0
+        for card in hand:
+            score += card_value(card, score)
+        return score
 
-        #Play Again
-        play_again = input('Do you want to play again? (Yes or No): ').strip().lower()
-        if play_again != 'yes':
-            print(f'You ended with {player_chips} chips, See you next time.')
-            break
+    def update_display(self):
+        """Update the player and dealer cards on the screen."""
+        self.player_label.config(text=f"Player: {self.player_hand} (Score: {self.calculate_score(self.player_hand)})")
+        self.dealer_label.config(text=f"Dealer: {self.dealer_hand[0]}, [Hidden]")
 
-#Starts Game
-play_blackjack()
+    def check_winner(self):
+        """Determine the winner after the dealer's turn."""
+        player_score = self.calculate_score(self.player_hand)
+        dealer_score = self.calculate_score(self.dealer_hand)
+
+        self.dealer_label.config(text=f"Dealer: {self.dealer_hand} (Score: {dealer_score})")
+
+        if dealer_score > 21 or player_score > dealer_score:
+            self.end_round("Player Wins!")
+            self.player_chips += self.bet
+        elif dealer_score > player_score:
+            self.end_round("Dealer Wins!")
+            self.player_chips -= self.bet
+        else:
+            self.end_round("It's a Draw!")
+
+    def end_round(self, result):
+        """End the round, display the result, and reset the game."""
+        self.result_label.config(text=result)
+        self.chip_label.config(text=f"Chips: {self.player_chips}")
+
+        if self.player_chips <= 0:
+            messagebox.showinfo("Game Over", "You're out of chips! Game over.")
+            self.root.quit()
+        else:
+            self.bet_entry.config(state="normal")
+            self.deal_button.config(state="normal")
+            self.hit_button.config(state="disabled")
+            self.stand_button.config(state="disabled")
+            self.new_round()
+
+
+# Run the app
+root = tk.Tk()
+app = BlackjackApp(root)
+root.mainloop()
+
+# def play_blackjack():
+#     #Chip System
+#     starting_chips = 100
+#     player_chips = starting_chips
+#
+#     while player_chips > 0:
+#         print(f'You have {player_chips} chips.')
+#
+#         #Betting System
+#         while True:
+#             try:
+#                 bet = int(input('How much would you like to bet this round (Choose Wisely):'))
+#                 if bet > player_chips:
+#                     print('You dont have enough chips!')
+#                 elif bet <= 0:
+#                     print('You have to bet something greater than 0.')
+#                 else:
+#                     break
+#             except ValueError:
+#                 print('Please enter a valid number.')
+#
+#         # Initialization
+#         deck = create_deck()
+#         random.shuffle(deck)
+#         player_card = [deck.pop(), deck.pop()]
+#         dealer_card = [deck.pop(), deck.pop()]
+#
+#         #Player Section
+#         player_busted = False
+#         while True:
+#             player_score = sum(card_value(card, sum(card_value(c) for c in player_card)) for card in player_card)
+#             print(f'\nPlayer Cards: {player_card}')
+#             print(f'Player Score: {player_score}')
+#
+#             if player_score > 21:
+#                 print('Player broke 21, Dealer wins.')
+#                 player_chips -= bet
+#                 player_busted = True
+#                 break
+#
+#             choice = input("What's your next move? (Hit or Stand): ").strip().lower()
+#             if choice == 'hit':
+#                 player_card.append(deck.pop())
+#             elif choice == 'stand':
+#                 break
+#             else:
+#                 print('Invalid Move, Try Again')
+#
+#         #Dealer Section
+#         if not player_busted:
+#             while True:
+#                 dealer_score = sum(card_value(card, sum(card_value(c) for c in dealer_card)) for card in dealer_card)
+#
+#                 if dealer_score > 21:
+#                     print(f'\nDealer Cards: {dealer_card}')
+#                     print(f'Dealer Score: {dealer_score}')
+#                     print('Player Wins, Dealer broke 21!')
+#                     player_chips += bet
+#                     break
+#
+#                 if dealer_score < 17:
+#                     dealer_card.append(deck.pop())
+#                 else:
+#                     break
+#
+#             if dealer_score <= 21:
+#                 print(f'\nDealer Cards: {dealer_card}')
+#                 print(f'Dealer Score: {dealer_score}')
+#                 print('\n')
+#                 if player_score > dealer_score:
+#                     print('Player Wins! Player was closer to 21.')
+#                     player_chips += bet
+#                 elif dealer_score > player_score:
+#                     print('Dealer Wins! Dealer was closer to 21.')
+#                     player_chips -= bet
+#                 else:
+#                     print('It\'s a Draw!')
+#
+#         #Out of Chips
+#         if player_chips <= 0:
+#             print("You're out of chips, better luck next time!")
+#             break
+#
+#         #Update Chip Count
+#         print(f'\nYou now have {player_chips} chips.')
+#
+#         #Play Again
+#         play_again = input('Do you want to play again? (Yes or No): ').strip().lower()
+#         if play_again != 'yes':
+#             print(f'You ended with {player_chips} chips, See you next time.')
+#             break
+#
+# #Starts Game
+# play_blackjack()
