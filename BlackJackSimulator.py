@@ -1,4 +1,4 @@
-#Black Jack Simulator
+#Black Jack Simulator (V.3)
 import random
 import tkinter as tk
 from tkinter import messagebox
@@ -83,7 +83,7 @@ class BlackjackApp:
         self.result_label.grid(row=6, column=1, pady=10)
 
     def new_round(self):
-        """Initialize a new round."""
+        #Initialize a new round
         self.deck = create_deck()
         random.shuffle(self.deck)
         self.player_hand = [self.deck.pop(), self.deck.pop()]
@@ -91,7 +91,7 @@ class BlackjackApp:
         self.update_display()
 
     def place_bet(self):
-        """Place a bet and start the game."""
+        #Place a bet and start the game
         try:
             self.bet = int(self.bet_entry.get())
             if self.bet > self.player_chips:
@@ -104,7 +104,7 @@ class BlackjackApp:
             messagebox.showerror("Error", "Please enter a valid number.")
 
     def start_game(self):
-        """Enable buttons and start the round."""
+        #Enable buttons and start the round
         self.result_label.config(text="")
         self.bet_entry.config(state="disabled")
         self.deal_button.config(state="disabled")
@@ -112,7 +112,7 @@ class BlackjackApp:
         self.stand_button.config(state="normal")
 
     def hit(self):
-        """Player chooses to draw a card."""
+        #Player chooses to draw a card
         self.player_hand.append(self.deck.pop())
         self.update_display()
 
@@ -123,7 +123,7 @@ class BlackjackApp:
             self.end_round("Bust! Dealer Wins.")
 
     def stand(self):
-        """Player stands, dealer's turn."""
+        #Player stands, dealer's turn
         while self.calculate_score(self.dealer_hand) < 17:
             self.dealer_hand.append(self.deck.pop())
 
@@ -131,14 +131,14 @@ class BlackjackApp:
         self.check_winner()
 
     def calculate_score(self, hand):
-        """Calculate the total score of a hand."""
+        #Calculate the total score of a hand
         score = 0
         for card in hand:
             score += card_value(card, score)
         return score
 
     def update_display(self, reveal_dealer=False):
-        """Update the player and dealer cards on the screen."""
+        #Update the player and dealer cards on the screen
         self.player_label.config(text=f"Player: {self.player_hand}", bg="MintCream")
         self.player_score_label.config(text=f"Score: {self.calculate_score(self.player_hand)}")
 
@@ -148,11 +148,11 @@ class BlackjackApp:
             self.dealer_label.config(text=f"Dealer: {self.dealer_hand[0]}, [Hidden] \n(Score: ?)")
 
     def update_chip_display(self):
-        """Update the chip count label."""
+        #Update the chip count label
         self.chip_label.config(text=f"Chips: {self.player_chips}")
 
     def check_winner(self):
-        """Determine the winner after the dealer's turn."""
+        #Determine the winner after the dealer's turn
         player_score = self.calculate_score(self.player_hand)
         dealer_score = self.calculate_score(self.dealer_hand)
 
@@ -170,7 +170,7 @@ class BlackjackApp:
         self.update_chip_display()
 
     def end_round(self, result):
-        """End the round, display the result, and reset the game."""
+        #End the round, display the result, and reset the game
         self.update_display(reveal_dealer=True)
         self.result_label.config(text=result)
         self.chip_label.config(text=f"Chips: {self.player_chips}")
